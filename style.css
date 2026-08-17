@@ -73,21 +73,34 @@ label {
 }
 
 textarea,
+input,
+select,
 button {
   font: inherit;
 }
 
-textarea {
+textarea,
+input,
+select {
   width: 100%;
-  resize: vertical;
+  min-height: 44px;
+  height: 44px;
   border: 1px solid var(--line);
   border-radius: 12px;
-  padding: 12px 14px;
+  padding: 10px 14px;
   background: #fff;
   color: var(--text);
+  line-height: 1.4;
 }
 
-textarea:focus {
+textarea {
+  resize: none;
+  overflow: hidden;
+}
+
+textarea:focus,
+input:focus,
+select:focus {
   outline: none;
   border-color: var(--primary);
   box-shadow: 0 0 0 4px rgba(29, 78, 216, 0.1);
