@@ -43,8 +43,8 @@ h1 {
 }
 
 .content {
-  display: grid;
-  grid-template-columns: 1.5fr 1fr;
+  display: flex;
+  flex-direction: column;
   gap: 24px;
 }
 
@@ -121,16 +121,15 @@ button:hover {
   box-shadow: 0 12px 22px rgba(29, 78, 216, 0.2);
 }
 
-.output-panel {
-  min-height: 420px;
+.records-panel {
+  min-height: 200px;
 }
 
-.output-area {
+.records-list {
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  min-height: 260px;
-  line-height: 1.6;
+  gap: 18px;
+  min-height: 180px;
 }
 
 .empty-state {
@@ -143,16 +142,30 @@ button:hover {
   padding: 20px;
 }
 
+.saved-record {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  padding: 18px;
+  background: #fbfdff;
+}
+
+.record-header h3 {
+  margin: 0;
+}
+
 .saved-section {
   border: 1px solid var(--line);
   border-radius: 16px;
   padding: 16px 18px;
-  background: #fbfdff;
+  background: #fff;
 }
 
-.saved-section h3 {
+.saved-section h4 {
   margin: 0 0 10px;
-  font-size: 1.1rem;
+  font-size: 1.02rem;
 }
 
 .saved-section p {
@@ -165,10 +178,6 @@ button:hover {
 }
 
 @media (max-width: 860px) {
-  .content {
-    grid-template-columns: 1fr;
-  }
-
   .panel {
     padding: 22px 18px;
   }
