@@ -1,6 +1,7 @@
 const form = document.getElementById('feedbackForm');
 const recordsList = document.getElementById('recordsList');
 const STORAGE_KEY = 'foundersToolkitRecords';
+const STAKEHOLDER_STORAGE_KEY = 'stakeholderTrackerRecords';
 
 const escapeHtml = (value) =>
   String(value)
@@ -10,6 +11,25 @@ const escapeHtml = (value) =>
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#039;');
 
+// Tab Switching
+const tabButtons = document.querySelectorAll('.tab-button');
+const tabContents = document.querySelectorAll('.tab-content');
+
+tabButtons.forEach((button) => {
+  button.addEventListener('click', () => {
+    const tabName = button.getAttribute('data-tab');
+
+    // Remove active class from all buttons and contents
+    tabButtons.forEach((btn) => btn.classList.remove('active'));
+    tabContents.forEach((content) => content.classList.remove('active'));
+
+    // Add active class to clicked button and corresponding content
+    button.classList.add('active');
+    document.getElementById(`${tabName}-tab`).classList.add('active');
+  });
+});
+
+// Feedback Form functionality
 const getSavedRecords = () => {
   try {
     const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
@@ -104,3 +124,84 @@ form.addEventListener('submit', (event) => {
 });
 
 renderRecords(getSavedRecords());
+
+// Stakeholder Tracker functionality
+const stakeholderForm = document.getElementById('stakeholderForm');
+const stakeholdersList = document.getElementById('stakeholdersList');
+
+const getSavedStakeholders = () => {
+  try {
+    const saved = JSON.parse(localStorage.getItem(STAKEHOLDER_STORAGE_KEY) || '[]');
+    return Array.isArray(saved) ? saved : [];
+  } catch (error) {
+    console.error('Unable to read stakeholder records.', error);
+    return [];
+  }
+};
+
+const saveStakeholders = (records) => {
+  localStorage.setItem(STAKEHOLDER_STORAGE_KEY, JSON.stringify(records));
+};
+
+const renderStakeholders = (stakeholders) => {
+  const table = stakeholdersList.querySelector('table');
+  const tbody = table.querySelector('tbody');
+
+  if (!stakeholders.length) {
+    tbody.innerHTML = '<tr class="empty-row"><td colspan="3">No stakeholder records yet.</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = stakeholders
+    .map(
+      (record) => `
+        <tr>
+          <td>${escapeHtml(record.name)}</td>
+          <td><strong>${escapeHtml(record.type)}</strong></td>
+          <td>${escapeHtml(record.feedback)}</td>
+        </tr>
+      `
+    )
+    .join('');
+};
+
+const showSuccessMessage = () => {
+  const successMsg = document.createElement('div');
+  successMsg.className = 'success-message';
+  successMsg.textContent = 'Stakeholder record added successfully!';
+
+  stakeholderForm.parentElement.insertBefore(successMsg, stakeholderForm);
+
+  setTimeout(() => {
+    successMsg.remove();
+  }, 3000);
+};
+
+stakeholderForm.addEventListener('submit', (event) => {
+  event.preventDefault();
+
+  const name = document.getElementById('stakeholderName').value.trim();
+  const type = document.getElementById('stakeholderType').value;
+  const feedback = document.getElementById('stakeholderFeedback').value.trim();
+
+  if (!name || !type || !feedback) {
+    alert('Please fill in all fields.');
+    return;
+  }
+
+  const record = {
+    name,
+    type,
+    feedback,
+  };
+
+  const existingStakeholders = getSavedStakeholders();
+  const updatedStakeholders = [record, ...existingStakeholders];
+  saveStakeholders(updatedStakeholders);
+  renderStakeholders(updatedStakeholders);
+
+  showSuccessMessage();
+  stakeholderForm.reset();
+});
+
+renderStakeholders(getSavedStakeholders());
