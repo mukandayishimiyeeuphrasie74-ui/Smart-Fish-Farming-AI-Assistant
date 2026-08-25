@@ -16,6 +16,7 @@
       <nav class="tabs">
         <button class="tab-button active" data-tab="feedback">Feedback Form</button>
         <button class="tab-button" data-tab="stakeholder">Stakeholder Tracker</button>
+        <button class="tab-button" data-tab="feedback-analyzer">Feedback Analyzer</button>
       </nav>
 
       <main class="content">
@@ -154,6 +155,33 @@
                 </tbody>
               </table>
             </div>
+          </section>
+        </section>
+
+        <section class="tab-content" id="feedback-analyzer-tab">
+          <section class="panel form-panel">
+            <h2>Feedback Analyzer</h2>
+            <p class="subtitle">Find patterns across all your feedback</p>
+
+            <div class="field-group">
+              <label for="feedbackAnalyzerProblem">Problem</label>
+              <textarea
+                id="feedbackAnalyzerProblem"
+                name="feedbackAnalyzerProblem"
+                rows="6"
+                placeholder="Describe the business problem you want to analyze..."
+              ></textarea>
+            </div>
+
+            <div class="button-row">
+              <button type="button" id="saveFeedbackProblemButton">Save Problem</button>
+              <button type="button" id="analyzeAllFeedbackButton" class="secondary-button">Analyze All Feedback</button>
+            </div>
+          </section>
+
+          <section class="panel analysis-panel" aria-live="polite">
+            <h2>AI Analysis</h2>
+            <div id="feedbackAnalyzerOutput" class="analysis-output">No analysis yet.</div>
           </section>
         </section>
       </main>

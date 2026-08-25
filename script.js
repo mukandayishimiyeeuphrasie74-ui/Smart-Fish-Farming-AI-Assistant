@@ -205,3 +205,93 @@ stakeholderForm.addEventListener('submit', (event) => {
 });
 
 renderStakeholders(getSavedStakeholders());
+
+// Feedback Analyzer functionality
+const FEEDBACK_ANALYZER_PROBLEM_KEY = 'feedbackAnalyzerProblem';
+const feedbackAnalyzerProblemInput = document.getElementById('feedbackAnalyzerProblem');
+const feedbackAnalyzerOutput = document.getElementById('feedbackAnalyzerOutput');
+const saveFeedbackProblemButton = document.getElementById('saveFeedbackProblemButton');
+const analyzeAllFeedbackButton = document.getElementById('analyzeAllFeedbackButton');
+
+const loadSavedFeedbackAnalyzerProblem = () => {
+  const savedProblem = localStorage.getItem(FEEDBACK_ANALYZER_PROBLEM_KEY) || '';
+  if (feedbackAnalyzerProblemInput) {
+    feedbackAnalyzerProblemInput.value = savedProblem;
+  }
+  return savedProblem;
+};
+
+const saveFeedbackAnalyzerProblem = () => {
+  if (!feedbackAnalyzerProblemInput) {
+    return;
+  }
+
+  const problem = feedbackAnalyzerProblemInput.value.trim();
+
+  if (!problem) {
+    alert('Please enter a problem before saving.');
+    return;
+  }
+
+  localStorage.setItem(FEEDBACK_ANALYZER_PROBLEM_KEY, problem);
+  feedbackAnalyzerOutput.textContent = 'Problem saved locally.';
+};
+
+const collectFeedbackAnalyzerContext = () => {
+  const problem = (localStorage.getItem(FEEDBACK_ANALYZER_PROBLEM_KEY) || feedbackAnalyzerProblemInput?.value || '').trim();
+
+  const founderRecords = getSavedRecords().map((record) => ({
+    source: 'Founders Toolkit',
+    problem: record.problem,
+    stakeholder1: record.stakeholder1,
+    stakeholder2: record.stakeholder2,
+  }));
+
+  const stakeholderRecords = getSavedStakeholders().map((record) => ({
+    source: 'Stakeholder Tracker',
+    name: record.name,
+    type: record.type,
+    feedback: record.feedback,
+  }));
+
+  return {
+    problem,
+    feedbackRecords: [...founderRecords, ...stakeholderRecords],
+  };
+};
+
+saveFeedbackProblemButton.addEventListener('click', saveFeedbackAnalyzerProblem);
+
+analyzeAllFeedbackButton.addEventListener('click', async () => {
+  const { problem, feedbackRecords } = collectFeedbackAnalyzerContext();
+
+  if (!problem) {
+    alert('Please save or enter a problem before analyzing.');
+    return;
+  }
+
+  feedbackAnalyzerOutput.innerHTML = '<p>Analyzing feedback...</p>';
+
+  try {
+    const response = await fetch('/api/analyze-feedback', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ problem, feedbackRecords }),
+    });
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      throw new Error(result.error || 'Unable to analyze feedback.');
+    }
+
+    feedbackAnalyzerOutput.innerHTML = `<pre>${escapeHtml(result.analysis || 'No analysis returned.')}</pre>`;
+  } catch (error) {
+    console.error('Feedback analysis failed:', error);
+    feedbackAnalyzerOutput.textContent = error.message || 'There was an error analyzing the feedback.';
+  }
+});
+
+loadSavedFeedbackAnalyzerProblem();
