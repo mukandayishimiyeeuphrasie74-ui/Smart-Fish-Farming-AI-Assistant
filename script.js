@@ -1,6 +1,7 @@
 const form = document.getElementById('feedbackForm');
 const recordsList = document.getElementById('recordsList');
 const STORAGE_KEY = 'foundersToolkitRecords';
+const STAKEHOLDER_STORAGE_KEY = 'stakeholderTrackerRecords';
 
 const escapeHtml = (value) =>
   String(value)
@@ -10,6 +11,25 @@ const escapeHtml = (value) =>
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#039;');
 
+// Tab Switching
+const tabButtons = document.querySelectorAll('.tab-button');
+const tabContents = document.querySelectorAll('.tab-content');
+
+tabButtons.forEach((button) => {
+  button.addEventListener('click', () => {
+    const tabName = button.getAttribute('data-tab');
+
+    // Remove active class from all buttons and contents
+    tabButtons.forEach((btn) => btn.classList.remove('active'));
+    tabContents.forEach((content) => content.classList.remove('active'));
+
+    // Add active class to clicked button and corresponding content
+    button.classList.add('active');
+    document.getElementById(`${tabName}-tab`).classList.add('active');
+  });
+});
+
+// Feedback Form functionality
 const getSavedRecords = () => {
   try {
     const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
@@ -104,3 +124,174 @@ form.addEventListener('submit', (event) => {
 });
 
 renderRecords(getSavedRecords());
+
+// Stakeholder Tracker functionality
+const stakeholderForm = document.getElementById('stakeholderForm');
+const stakeholdersList = document.getElementById('stakeholdersList');
+
+const getSavedStakeholders = () => {
+  try {
+    const saved = JSON.parse(localStorage.getItem(STAKEHOLDER_STORAGE_KEY) || '[]');
+    return Array.isArray(saved) ? saved : [];
+  } catch (error) {
+    console.error('Unable to read stakeholder records.', error);
+    return [];
+  }
+};
+
+const saveStakeholders = (records) => {
+  localStorage.setItem(STAKEHOLDER_STORAGE_KEY, JSON.stringify(records));
+};
+
+const renderStakeholders = (stakeholders) => {
+  const table = stakeholdersList.querySelector('table');
+  const tbody = table.querySelector('tbody');
+
+  if (!stakeholders.length) {
+    tbody.innerHTML = '<tr class="empty-row"><td colspan="3">No stakeholder records yet.</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = stakeholders
+    .map(
+      (record) => `
+        <tr>
+          <td>${escapeHtml(record.name)}</td>
+          <td><strong>${escapeHtml(record.type)}</strong></td>
+          <td>${escapeHtml(record.feedback)}</td>
+        </tr>
+      `
+    )
+    .join('');
+};
+
+const showSuccessMessage = () => {
+  const successMsg = document.createElement('div');
+  successMsg.className = 'success-message';
+  successMsg.textContent = 'Stakeholder record added successfully!';
+
+  stakeholderForm.parentElement.insertBefore(successMsg, stakeholderForm);
+
+  setTimeout(() => {
+    successMsg.remove();
+  }, 3000);
+};
+
+stakeholderForm.addEventListener('submit', (event) => {
+  event.preventDefault();
+
+  const name = document.getElementById('stakeholderName').value.trim();
+  const type = document.getElementById('stakeholderType').value;
+  const feedback = document.getElementById('stakeholderFeedback').value.trim();
+
+  if (!name || !type || !feedback) {
+    alert('Please fill in all fields.');
+    return;
+  }
+
+  const record = {
+    name,
+    type,
+    feedback,
+  };
+
+  const existingStakeholders = getSavedStakeholders();
+  const updatedStakeholders = [record, ...existingStakeholders];
+  saveStakeholders(updatedStakeholders);
+  renderStakeholders(updatedStakeholders);
+
+  showSuccessMessage();
+  stakeholderForm.reset();
+});
+
+renderStakeholders(getSavedStakeholders());
+
+// Feedback Analyzer functionality
+const FEEDBACK_ANALYZER_PROBLEM_KEY = 'feedbackAnalyzerProblem';
+const feedbackAnalyzerProblemInput = document.getElementById('feedbackAnalyzerProblem');
+const feedbackAnalyzerOutput = document.getElementById('feedbackAnalyzerOutput');
+const saveFeedbackProblemButton = document.getElementById('saveFeedbackProblemButton');
+const analyzeAllFeedbackButton = document.getElementById('analyzeAllFeedbackButton');
+
+const loadSavedFeedbackAnalyzerProblem = () => {
+  const savedProblem = localStorage.getItem(FEEDBACK_ANALYZER_PROBLEM_KEY) || '';
+  if (feedbackAnalyzerProblemInput) {
+    feedbackAnalyzerProblemInput.value = savedProblem;
+  }
+  return savedProblem;
+};
+
+const saveFeedbackAnalyzerProblem = () => {
+  if (!feedbackAnalyzerProblemInput) {
+    return;
+  }
+
+  const problem = feedbackAnalyzerProblemInput.value.trim();
+
+  if (!problem) {
+    alert('Please enter a problem before saving.');
+    return;
+  }
+
+  localStorage.setItem(FEEDBACK_ANALYZER_PROBLEM_KEY, problem);
+  feedbackAnalyzerOutput.textContent = 'Problem saved locally.';
+};
+
+const collectFeedbackAnalyzerContext = () => {
+  const problem = (localStorage.getItem(FEEDBACK_ANALYZER_PROBLEM_KEY) || feedbackAnalyzerProblemInput?.value || '').trim();
+
+  const founderRecords = getSavedRecords().map((record) => ({
+    source: 'Founders Toolkit',
+    problem: record.problem,
+    stakeholder1: record.stakeholder1,
+    stakeholder2: record.stakeholder2,
+  }));
+
+  const stakeholderRecords = getSavedStakeholders().map((record) => ({
+    source: 'Stakeholder Tracker',
+    name: record.name,
+    type: record.type,
+    feedback: record.feedback,
+  }));
+
+  return {
+    problem,
+    feedbackRecords: [...founderRecords, ...stakeholderRecords],
+  };
+};
+
+saveFeedbackProblemButton.addEventListener('click', saveFeedbackAnalyzerProblem);
+
+analyzeAllFeedbackButton.addEventListener('click', async () => {
+  const { problem, feedbackRecords } = collectFeedbackAnalyzerContext();
+
+  if (!problem) {
+    alert('Please save or enter a problem before analyzing.');
+    return;
+  }
+
+  feedbackAnalyzerOutput.innerHTML = '<p>Analyzing feedback...</p>';
+
+  try {
+    const response = await fetch('/api/analyze-feedback', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ problem, feedbackRecords }),
+    });
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      throw new Error(result.error || 'Unable to analyze feedback.');
+    }
+
+    feedbackAnalyzerOutput.innerHTML = `<pre>${escapeHtml(result.analysis || 'No analysis returned.')}</pre>`;
+  } catch (error) {
+    console.error('Feedback analysis failed:', error);
+    feedbackAnalyzerOutput.textContent = error.message || 'There was an error analyzing the feedback.';
+  }
+});
+
+loadSavedFeedbackAnalyzerProblem();
